@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Separate vocals, background music, and instruments from audio files locally on your server.">
+    <title>Stem Separator — AI Vocals, Music &amp; Instrument Separation</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+    <div class="page-shell">
+        <header class="site-header" role="banner">
+            <div class="header-badge" id="systemBadge" aria-live="polite">
+                <span class="badge-dot" id="deviceDot"></span>
+                <span id="deviceBadgeText">Checking local engine…</span>
+            </div>
+            <div class="brand-title">
+                <span class="brand-icon" aria-hidden="true">🎵</span>
+                <h1>Stem Separator</h1>
+            </div>
+            <p class="brand-subtitle">
+                Isolate vocals, accompaniment music, and instruments from any song right on your machine.
+            </p>
+        </header>
+
+        <main id="mainContent" class="main-card" role="main">
+            <form id="separationForm" novalidate>
+                <!-- Step 1: Choose Audio File -->
+                <section class="step-section" aria-labelledby="step1Heading">
+                    <div class="step-header">
+                        <span class="step-number" aria-hidden="true">1</span>
+                        <div>
+                            <h2 id="step1Heading">Choose an audio file</h2>
+                            <p class="step-hint">Drag and drop a song or browse from your device. Everything is processed locally on this server.</p>
+                        </div>
+                    </div>
+
+                    <div class="dropzone" id="dropzone" role="region" aria-label="Audio file upload area">
+                        <input
+                            type="file"
+                            id="audioFileInput"
+                            name="file"
+                            class="sr-only-input"
+                            accept=".mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,audio/*"
+                            aria-describedby="uploadFormatsHint"
+                            required
+                        >
+                        <label for="audioFileInput" class="dropzone-label" id="dropzoneLabel">
+                            <span class="dropzone-icon" aria-hidden="true">📁</span>
+                            <span class="dropzone-primary" id="dropzonePrimaryText">Click to select a song or drag &amp; drop here</span>
+                            <span class="dropzone-secondary" id="uploadFormatsHint">
+                                Supports MP3, WAV, FLAC, M4A, AAC, OGG, OPUS • Up to <span id="maxUploadLabel">250</span> MB
+                            </span>
+                        </label>
+
+                        <div class="selected-file-bar" id="selectedFileBar" hidden>
+                            <div class="selected-file-details">
+                                <span class="selected-file-icon" aria-hidden="true">🎶</span>
+                                <div class="selected-file-text">
+                                    <strong id="selectedFileName">song.mp3</strong>
+                                    <span id="selectedFileSize">0 MB</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-ghost btn-sm" id="changeFileBtn" aria-label="Choose a different audio file">
+                                Change file
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2: Choose What to Separate -->
+                <section class="step-section" aria-labelledby="step2Heading">
+                    <div class="step-header">
+                        <span class="step-number" aria-hidden="true">2</span>
+                        <div>
+                            <h2 id="step2Heading">Choose what you want to separate</h2>
+                            <p class="step-hint">Pick a quick separation goal, then select the tracks you want to save.</p>
+                        </div>
+                    </div>
+
+                    <!-- Mode Presets -->
+                    <div class="preset-grid" id="presetGrid" role="radiogroup" aria-label="Separation goal">
+                        <label class="preset-card selected" data-mode="vocals_music">
+                            <input type="radio" name="mode" value="vocals_music" checked>
+                            <span class="preset-icon" aria-hidden="true">🎤</span>
+                            <span class="preset-title">Vocals &amp; Music</span>
+                            <span class="preset-desc">Isolate the singer's voice and the instrumental backing track</span>
+                        </label>
+
+                        <label class="preset-card" data-mode="all_instruments">
+                            <input type="radio" name="mode" value="all_instruments">
+                            <span class="preset-icon" aria-hidden="true">🥁</span>
+                            <span class="preset-title">Drums, Bass, Vocals &amp; Other</span>
+                            <span class="preset-desc">Split a song into individual band instruments</span>
+                        </label>
+
+                        <label class="preset-card" data-mode="extended_instruments">
+                            <input type="radio" name="mode" value="extended_instruments">
+                            <span class="preset-icon" aria-hidden="true">🎸</span>
+                            <span class="preset-title">6 Instruments (Guitar &amp; Piano)</span>
+                            <span class="preset-desc">Extract vocals, drums, bass, guitar, piano, and other instruments</span>
+                        </label>
+                    </div>
+
+                    <!-- Output Tracks Selection (filtered dynamically by model capabilities) -->
+                    <div class="tracks-box">
+                        <div class="tracks-box-header">
+                            <h3 id="tracksGroupLabel">Tracks to extract</h3>
+                            <span class="tracks-model-tag" id="activeModelTag">Model: MDX-Net Inst HQ 3</span>
+                        </div>
+                        <div class="tracks-grid" id="tracksGrid" role="group" aria-labelledby="tracksGroupLabel">
+                            <label class="track-chip checked" data-track="vocals">
+                                <input type="checkbox" name="tracks" value="vocals" checked>
+                                <span class="track-chip-icon" aria-hidden="true">🎤</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Vocals</span>
+                                    <span class="track-chip-desc">Main singing and voice</span>
+                                </span>
+                            </label>
+                            <label class="track-chip checked" data-track="music">
+                                <input type="checkbox" name="tracks" value="music" checked>
+                                <span class="track-chip-icon" aria-hidden="true">🎹</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Music (Instrumental)</span>
+                                    <span class="track-chip-desc">Accompaniment without vocals</span>
+                                </span>
+                            </label>
+                            <label class="track-chip" data-track="drums" hidden>
+                                <input type="checkbox" name="tracks" value="drums" disabled>
+                                <span class="track-chip-icon" aria-hidden="true">🥁</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Drums</span>
+                                    <span class="track-chip-desc">Drums and percussion</span>
+                                </span>
+                            </label>
+                            <label class="track-chip" data-track="bass" hidden>
+                                <input type="checkbox" name="tracks" value="bass" disabled>
+                                <span class="track-chip-icon" aria-hidden="true">🎸</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Bass</span>
+                                    <span class="track-chip-desc">Bass guitar and sub-bass</span>
+                                </span>
+                            </label>
+                            <label class="track-chip" data-track="guitar" hidden>
+                                <input type="checkbox" name="tracks" value="guitar" disabled>
+                                <span class="track-chip-icon" aria-hidden="true">🪕</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Guitar</span>
+                                    <span class="track-chip-desc">Electric and acoustic guitars</span>
+                                </span>
+                            </label>
+                            <label class="track-chip" data-track="piano" hidden>
+                                <input type="checkbox" name="tracks" value="piano" disabled>
+                                <span class="track-chip-icon" aria-hidden="true">🎼</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Piano</span>
+                                    <span class="track-chip-desc">Piano and keyboard parts</span>
+                                </span>
+                            </label>
+                            <label class="track-chip" data-track="other" hidden>
+                                <input type="checkbox" name="tracks" value="other" disabled>
+                                <span class="track-chip-icon" aria-hidden="true">🎵</span>
+                                <span class="track-chip-text">
+                                    <span class="track-chip-name">Other Instruments</span>
+                                    <span class="track-chip-desc">Remaining instruments and synths</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3: Output Format & Advanced Settings -->
+                <section class="step-section" aria-labelledby="step3Heading">
+                    <div class="step-header">
+                        <span class="step-number" aria-hidden="true">3</span>
+                        <div>
+                            <h2 id="step3Heading">Audio format &amp; options</h2>
+                            <p class="step-hint">Choose lossless quality for editing or compact MP3 for everyday listening.</p>
+                        </div>
+                    </div>
+
+                    <div class="options-row">
+                        <div class="form-field">
+                            <label for="outputFormatSelect" class="field-label">Output audio format</label>
+                            <select id="outputFormatSelect" name="output_format" class="select-input">
+                                <option value="WAV">WAV (Lossless — Uncompressed studio quality)</option>
+                                <option value="FLAC">FLAC (Lossless Compressed — Half the size of WAV)</option>
+                                <option value="MP3">MP3 (320 kbps — Compact &amp; compatible everywhere)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- First-time model download & hardware info notice -->
+                    <div class="model-download-notice" id="modelNoticeBox" role="status" aria-live="polite">
+                        <span class="notice-icon" aria-hidden="true">ℹ️</span>
+                        <div class="notice-content" id="modelNoticeText">
+                            <strong>Ready on CPU.</strong> First-time use of MDX-Net Inst HQ 3 will download ~63.7 MB and cache it permanently on disk.
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Advanced Settings -->
+                    <details class="advanced-panel" id="advancedPanel">
+                        <summary class="advanced-summary">
+                            <span>⚙️ Advanced Model &amp; Device Settings (Optional)</span>
+                        </summary>
+                        <div class="advanced-body">
+                            <div class="advanced-grid">
+                                <div class="form-field">
+                                    <label for="modelSelect" class="field-label">Separation AI Model</label>
+                                    <select id="modelSelect" name="model_id" class="select-input">
+                                        <option value="auto" selected>Automatic (Recommended for chosen goal)</option>
+                                        <option value="vocals_music_fast">MDX-Net Inst HQ 3 — Vocals &amp; Music (63.7 MB, Fast)</option>
+                                        <option value="vocals_karaoke">MDX-Net Karaoke 2 — Lead Vocals &amp; Music (50.3 MB, Fast)</option>
+                                        <option value="vocals_music_hq">BS-Roformer Viperx 1297 — Vocals &amp; Music (609.7 MB, Studio Grade)</option>
+                                        <option value="instruments_4">Demucs v4 Hybrid Transformer — 4 Tracks + Music (80.2 MB)</option>
+                                        <option value="instruments_6">Demucs v4 6-Source — 6 Tracks with Guitar &amp; Piano (53.0 MB)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-field">
+                                    <label for="deviceSelect" class="field-label">Processing Device</label>
+                                    <select id="deviceSelect" name="device_preference" class="select-input">
+                                        <option value="auto" selected>Automatic (Use GPU if available, otherwise CPU)</option>
+                                        <option value="cpu">Force CPU</option>
+                                        <option value="cuda">Require NVIDIA GPU (CUDA)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="advanced-model-card" id="advancedModelCard">
+                                <p id="advancedModelSummary">
+                                    <strong>MDX-Net Inst HQ 3:</strong> Recommended default for separating vocals and background music on both CPU and GPU.
+                                </p>
+                                <p class="advanced-meta" id="advancedModelMeta">
+                                    Architecture: MDX • Download size: 63.7 MB • License: MIT License (Ultimate Vocal Remover / Anjok07 &amp; Kuielab MDX-Net)
+                                </p>
+                            </div>
+                        </div>
+                    </details>
+                </section>
+
+                <!-- Action Button -->
+                <div class="submit-row">
+                    <button type="submit" id="startBtn" class="btn-primary btn-lg" disabled>
+                        <span class="btn-icon" aria-hidden="true">✨</span>
+                        <span id="startBtnText">Select an audio file to begin</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Status / Progress Panel -->
+            <section class="status-panel" id="statusPanel" aria-live="polite" hidden>
+                <div class="status-card" id="statusCard">
+                    <div class="status-header">
+                        <span class="status-badge" id="statusBadge">Queued</span>
+                        <span class="status-device" id="statusDeviceBadge">Device: CPU</span>
+                    </div>
+                    <h3 id="statusTitle">Preparing your audio…</h3>
+                    <p id="statusMessage">Your file is being validated and queued for separation.</p>
+
+                    <!-- Stage Timeline -->
+                    <ol class="stage-steps" id="stageSteps" aria-label="Processing stages">
+                        <li class="stage-step" data-stage="preparing">1. Preparing audio</li>
+                        <li class="stage-step" data-stage="downloading_model">2. Loading AI model</li>
+                        <li class="stage-step" data-stage="separating">3. Separating tracks</li>
+                        <li class="stage-step" data-stage="exporting">4. Exporting files</li>
+                    </ol>
+
+                    <div class="progress-track" id="progressTrack" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar-fill indeterminate" id="progressBarFill"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Alert Panel -->
+            <section class="error-panel" id="errorPanel" role="alert" aria-live="assertive" hidden>
+                <div class="error-card">
+                    <div class="error-header">
+                        <span class="error-icon" aria-hidden="true">⚠️</span>
+                        <div>
+                            <h3 id="errorTitle">Unable to process audio</h3>
+                            <p id="errorMessage" class="error-text">Something went wrong during separation.</p>
+                        </div>
+                    </div>
+                    <div class="error-suggestion-box" id="errorSuggestionBox">
+                        <strong>What you can do:</strong>
+                        <span id="errorSuggestion">Please check your audio file or try a lighter model.</span>
+                    </div>
+                    <div class="error-actions">
+                        <button type="button" class="btn-secondary" id="retryBtn">Try Again</button>
+                        <button type="button" class="btn-ghost" id="useFastModelBtn">Switch to Fast CPU Model</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-panel" id="resultsPanel" aria-labelledby="resultsHeading" hidden>
+                <div class="results-header">
+                    <div>
+                        <span class="results-kicker">Separation Complete</span>
+                        <h2 id="resultsHeading">Your separated tracks are ready</h2>
+                        <p class="results-meta" id="resultsMeta">Processed locally • Listen below or download your files</p>
+                    </div>
+                    <div class="results-header-actions">
+                        <a href="#" id="downloadZipBtn" class="btn-success" download>
+                            <span aria-hidden="true">📦</span>
+                            <span>Download All (ZIP)</span>
+                        </a>
+                        <button type="button" id="resetJobBtn" class="btn-ghost">
+                            Separate Another Song
+                        </button>
+                    </div>
+                </div>
+
+                <div class="results-tracks-list" id="resultsTracksList">
+                    <!-- Dynamic track cards with HTML5 <audio> player and download button -->
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer" role="contentinfo">
+            <div class="footer-privacy">
+                <span>🔒 <strong>100% Local Processing:</strong> Your audio files are processed directly on this server and are never sent to external cloud APIs.</span>
+            </div>
+            <div class="footer-credits">
+                <p>
+                    <strong>Stem Separator</strong> (MIT License) • Powered by
+                    <a href="https://github.com/nomadkaraoke/python-audio-separator" target="_blank" rel="noopener noreferrer">python-audio-separator</a>
+                    &amp; models from
+                    <a href="https://github.com/Anjok07/ultimatevocalremovergui" target="_blank" rel="noopener noreferrer">Ultimate Vocal Remover (UVR)</a>,
+                    MDX-Net, BS-Roformer, and Meta AI Demucs.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
