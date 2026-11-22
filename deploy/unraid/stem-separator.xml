@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>stem-separator</Name>
+  <Repository>ghcr.io/paladini/stem-separator:latest</Repository>
+  <Registry>https://github.com/paladini/stem-separator/pkgs/container/stem-separator</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/paladini/stem-separator/issues</Support>
+  <Project>https://github.com/paladini/stem-separator</Project>
+  <Overview>Self-hosted web UI that separates vocals, background music, drums, bass, guitar, and piano from audio files using python-audio-separator (UVR MDX-Net, BS-Roformer, Demucs v4). CPU image.</Overview>
+  <Category>MediaApp:Music:Status:Stable</Category>
+  <WebUI>http://[IP]:[PORT:7860]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/paladini/stem-separator/main/deploy/unraid/stem-separator.xml</TemplateURL>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Description>
+    Stem Separator (CPU). Web UI on port 7860. First run downloads and caches AI model weights in /data/models. For NVIDIA GPU acceleration, use the stem-separator-gpu template instead.
+  </Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>7860</HostPort>
+        <ContainerPort>7860</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/stem-separator/output</HostDir>
+      <ContainerDir>/data/output</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/appdata/stem-separator/models</HostDir>
+      <ContainerDir>/data/models</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value>1</Value>
+      <Name>PYTHONUNBUFFERED</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/data/models</Value>
+      <Name>AUDIO_SEPARATOR_MODEL_DIR</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/data/output</Value>
+      <Name>STEM_SEPARATOR_OUTPUT_DIR</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Config Name="WebUI Port" Target="7860" Default="7860" Mode="tcp" Description="Web UI" Type="Port" Display="always" Required="true" Mask="false">7860</Config>
+  <Config Name="Separated files" Target="/data/output" Default="/mnt/user/appdata/stem-separator/output" Mode="rw" Description="Separated audio tracks and ZIP archives" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/stem-separator/output</Config>
+  <Config Name="Model cache" Target="/data/models" Default="/mnt/user/appdata/stem-separator/models" Mode="rw" Description="Persistent AI model cache" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/stem-separator/models</Config>
+</Container>

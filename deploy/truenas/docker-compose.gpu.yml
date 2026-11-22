@@ -1,0 +1,14 @@
+# TrueNAS SCALE NVIDIA GPU overlay for Stem Separator
+# Use together with deploy/truenas/docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+services:
+  stem-separator:
+    image: ghcr.io/paladini/stem-separator:gpu
+    gpus: all
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AUDIO_SEPARATOR_MODEL_DIR=/data/models
+      - STEM_SEPARATOR_OUTPUT_DIR=/data/output
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility

@@ -1,0 +1,110 @@
+# Publish stem-separator to GitHub Container Registry (GHCR).
+# Image: ghcr.io/paladini/stem-separator
+# Tags:  latest = CPU (Dockerfile); gpu = NVIDIA CUDA image (Dockerfile.gpu)
+
+name: Publish to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: "cpu = Dockerfile (:latest); gpu = Dockerfile.gpu (:gpu). GPU must not be published as :latest."
+        type: choice
+        required: true
+        default: cpu
+        options:
+          - cpu
+          - gpu
+      tag:
+        description: "GHCR tag to publish (use 'latest' for CPU, 'gpu' for GPU)"
+        required: true
+        default: latest
+      also_tag_sha:
+        description: "Also tag with short git SHA"
+        type: boolean
+        required: false
+        default: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: paladini/stem-separator
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VARIANT="${{ inputs.variant }}"
+          GHCR_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          DOCKERFILE="./Dockerfile"
+
+          if [[ "${VARIANT}" == "gpu" ]]; then
+            DOCKERFILE="./Dockerfile.gpu"
+            if [[ "${TAG}" == "latest" ]]; then
+              echo "Refusing to publish the GPU image as :latest. Use tag=gpu with variant=gpu."
+              exit 1
+            fi
+          fi
+
+          TAGS="${GHCR_IMAGE}:${TAG}"
+          if [[ "${{ inputs.also_tag_sha }}" == "true" ]]; then
+            SHORT_SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
+            if [[ "${VARIANT}" == "gpu" ]]; then
+              TAGS+=$'\n'"${GHCR_IMAGE}:${SHORT_SHA}-gpu"
+            else
+              TAGS+=$'\n'"${GHCR_IMAGE}:${SHORT_SHA}"
+            fi
+          fi
+          {
+            echo "ghcr_image=${GHCR_IMAGE}"
+            echo "primary_tag=${TAG}"
+            echo "dockerfile=${DOCKERFILE}"
+            echo "variant=${VARIANT}"
+            echo "tags<<EOF"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push from Dockerfile
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ steps.meta.outputs.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          provenance: false
+          sbom: false

@@ -1,0 +1,25 @@
+# TrueNAS SCALE custom app / Docker Compose for Stem Separator (CPU default)
+#
+# For NVIDIA GPU acceleration, combine with docker-compose.gpu.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+services:
+  stem-separator:
+    image: ghcr.io/paladini/stem-separator:${IMAGE_TAG:-latest}
+    container_name: stem-separator
+    ports:
+      - "7860:7860"
+    volumes:
+      - /mnt/tank/apps/stem-separator/output:/data/output
+      - /mnt/tank/apps/stem-separator/models:/data/models
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AUDIO_SEPARATOR_MODEL_DIR=/data/models
+      - STEM_SEPARATOR_OUTPUT_DIR=/data/output
+      - STEM_SEPARATOR_MAX_UPLOAD_MB=250
+      - STEM_SEPARATOR_MAX_DURATION_MINUTES=30
+      - STEM_SEPARATOR_MIN_FREE_DISK_MB=500
+      - STEM_SEPARATOR_MAX_CONCURRENT_JOBS=1
+      - STEM_SEPARATOR_MAX_QUEUE_SIZE=5
+      - STEM_SEPARATOR_JOB_RETENTION_HOURS=24
+    restart: unless-stopped
