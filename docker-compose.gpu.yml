@@ -1,0 +1,22 @@
+# Stem Separator — NVIDIA GPU Docker Compose Override
+#
+# Use together with docker-compose.yml so only ONE container runs on port 7860:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+#
+# Host prerequisites:
+#   1. NVIDIA GPU with updated NVIDIA drivers (CUDA 12 compatible)
+#   2. NVIDIA Container Toolkit installed and configured for Docker
+
+services:
+  stem-separator:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: paladini/stem-separator:gpu
+    gpus: all
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AUDIO_SEPARATOR_MODEL_DIR=/data/models
+      - STEM_SEPARATOR_OUTPUT_DIR=/data/output
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
