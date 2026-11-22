@@ -73,9 +73,12 @@ class JobManager:
         job_dir = self._job_dir(job_id)
         job_dir.mkdir(parents=True, exist_ok=True)
         data["updated_at"] = _utc_now_iso()
-        temp_path = job_dir / f"job.json.{os.getpid()}.tmp" if "os" in globals() else job_dir / "job.json.tmp"
+        temp_path = job_dir / f"job.json.{uuid.uuid4().hex[:8]}.tmp"
         temp_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        temp_path.replace(self._job_json_path(job_id))
+        try:
+            temp_path.replace(self._job_json_path(job_id))
+        finally:
+            temp_path.unlink(missing_ok=True)
 
     def get_job(self, job_id: str) -> Dict[str, object]:
         """Read persisted job state from disk, or raise 404 SeparationError if not found."""
